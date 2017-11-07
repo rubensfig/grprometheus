@@ -1,4 +1,3 @@
-
 import services_definition_pb2_grpc as sgrpc
 import services_definition_pb2
 import grpc
@@ -33,7 +32,7 @@ class Connection:
     def run(self):
         self.prom.run()
         while True:
-            for obj in self.__getStats():
+            for obj in self.__getStats().interface:
                 if obj.state.counters.in_octets != 0:   
                     self.prom.addToStatsList(obj)
                     self.stats.addPackets(obj.name, obj.state.name, obj.state.counters.in_octets)
@@ -41,7 +40,7 @@ class Connection:
                     pass 
 
             self.stats.addFlow(self.__getState().network[0])
-            time.sleep(2)
+            time.sleep(1)
                        
 
 if __name__ == "__main__":

@@ -1,4 +1,8 @@
 import prometheus_client as pc
+import urllib2
+import time
+
+import threading 
 
 class Prometheus:
     structureStats = {'ibp' : pc.Gauge('in_broadcast_packets', 'InBroadcastPackets', ['nodeid', 'name']),
@@ -14,7 +18,8 @@ class Prometheus:
 
     def __init__(self):
         self.inBroadPack = 0
-        
+        self.thread = threading.Thread(target=self.getValues()) 
+        self.thread.start()
         #Prometheus internal things
 
     def run(self):
@@ -33,3 +38,10 @@ class Prometheus:
     def addToTopoList(self, obj):
         self.structureTop['nlinks'].set(len(obj.network[0].link))
         self.structureTop['nnodes'].set(len(obj.network[0].node))
+
+
+    def getValues(self):
+        while True:
+            for obj in urllib2.urlopen('http://172.17.0.3:9090/api/v1/query?query=in_octets').read():
+                print obj
+            time.sleep(1)

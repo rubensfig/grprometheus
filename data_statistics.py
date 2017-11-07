@@ -21,4 +21,4 @@ class DataStats:
 
     def addFlow(self, topology):
         for value in topology.link:
-            print value
+            value
