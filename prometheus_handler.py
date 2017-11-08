@@ -1,25 +1,23 @@
 import prometheus_client as pc
 import urllib2
 import time
-
 import threading 
+import json
 
 class Prometheus:
     structureStats = {'ibp' : pc.Gauge('in_broadcast_packets', 'InBroadcastPackets', ['nodeid', 'name']),
-                 'obp' : pc.Gauge('out_broadcast_packets', 'OutBroadcastPackets', ['nodeid', 'name']),
-                 'ioct' : pc.Gauge('in_octets', 'inOctets', ['nodeid','name']),
-                 'ooct' : pc.Gauge('out_octets', 'outOctets', ['nodeid','name']),
-                 'idis' : pc.Gauge('in_discards', 'InDiscards', ['nodeid','name']),
-                 'odis' : pc.Gauge('out_discards', 'OutDiscards', ['nodeid','name'])                 
-                }
+                      'obp' : pc.Gauge('out_broadcast_packets', 'OutBroadcastPackets', ['nodeid', 'name']),
+                      'ioct' : pc.Gauge('in_octets', 'inOctets', ['nodeid','name']),
+                      'ooct' : pc.Gauge('out_octets', 'outOctets', ['nodeid','name']),
+                      'idis' : pc.Gauge('in_discards', 'InDiscards', ['nodeid','name']),
+                      'odis' : pc.Gauge('out_discards', 'OutDiscards', ['nodeid','name'])                 
+                    }
     structureTop = { 'nlinks' : pc.Gauge('number_of_links', 'NumberLinks'),
                      'nnodes' : pc.Gauge('number_of_nodes', 'NumberNodes')            
                     }
 
     def __init__(self):
         self.inBroadPack = 0
-        self.thread = threading.Thread(target=self.getValues()) 
-        self.thread.start()
         #Prometheus internal things
 
     def run(self):
@@ -40,8 +38,19 @@ class Prometheus:
         self.structureTop['nnodes'].set(len(obj.network[0].node))
 
 
-    def getValues(self):
-        while True:
-            for obj in urllib2.urlopen('http://172.17.0.3:9090/api/v1/query?query=in_octets').read():
-                print obj
-            time.sleep(1)
+    def getValues(self, name):
+        counter = 10
+        counter -= 1
+        response = urllib2.urlopen('http://172.17.0.3:9090/api/v1/query?query=in_octets')
+        print json.loads(response.read().decode())
+
+class PrometheusThreading(threading.Thread, Prometheus):
+    def __init__(self):
+       threading.Thread.__init__(self)
+       self.name = "datastats"
+        
+    def run(self):
+        self.getValues(self.name)
+
+    def exit(self):
+        threading.currentThread().join()
