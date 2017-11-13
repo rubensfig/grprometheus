@@ -1,12 +1,18 @@
 from connection import Connection
+import sys
+
 class CLI(object):
 
     def __init__(self):
+        self.conn = Connection()
+        self.conn.start()
         while True:
-            user_input = input("Please enter command (or help): ")
-            self.command_choice(user_input)
-        conn = Connection()
-        conn.run()
+            try:
+                print "\n"
+                user_input = self.get_input("Please enter command (or help): ")
+                self.command_choice(user_input)
+            except KeyboardInterrupt:
+                sys.exit(1)
     # __init__
 
     def command_choice(self, argument):
@@ -15,8 +21,7 @@ class CLI(object):
             'help': self.display_help,
             'h': self.display_help,
         }
-        print(switcher)
-        return switcher.get(argument, self.default())
+        return switcher.get(argument, self.displayValues())
     # command_choice
 
     def default(self, ):
@@ -28,10 +33,10 @@ class CLI(object):
     # display_help
     
     def displayValues(self):
-        print "hello"
+        self.conn.getValues()
 
     def get_input(self, message):
-        user_input = input(message)
+        user_input = raw_input(message)
         return user_input
     # get_input
 # CLI

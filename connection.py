@@ -3,8 +3,8 @@ import services_definition_pb2_grpc as sgrpc
 import grpc
 import time
 from prometheus_handler import Prometheus as Prom
+from prometheus_handler import PrometheusThreading as PromT
 import traceback
-from data_statistics import DataStats
 import threading
 
 #Define data structure to utilize the statistics, and create a class to parse to prometheus
@@ -19,7 +19,6 @@ class Connection(threading.Thread):
         self.stubTop = sgrpc.NetworkDescriptorStub(grpc.insecure_channel(self.address))
 
         self.prom = Prom()
-        self.stats = DataStats()
 
     def __getState(self):
         try:
@@ -39,13 +38,13 @@ class Connection(threading.Thread):
             for obj in self.__getStats().interface:
                 if obj.state.counters.in_octets != 0:   
                     self.prom.addToStatsList(obj)
-                    self.stats.addPackets(obj.name, obj.state.name, obj.state.counters.in_octets)
                 else:
                     pass 
-
-            self.stats.addFlow(self.__getState().network[0])
             time.sleep(1)
-                       
+    
+    def getValues(self):
+        promT = PromT('in_octets')
+        promT.start()
 
 if __name__ == "__main__":
     conn = Connection()

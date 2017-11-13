@@ -1,4 +1,5 @@
-grpc
+grpcio
 grpcio-tools
 prometheus-client
 matplotlib
+pandas
