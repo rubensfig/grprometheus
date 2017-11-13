@@ -23,7 +23,7 @@ class Prometheus:
         pass
 
     def execute(self):
-        print("starting Prometheus")
+        print("starting Prometheus : PORT 8001")
         pc.start_http_server(8001)
 
     def addToStatsList(self, obj):
@@ -34,7 +34,6 @@ class Prometheus:
         self.structureStats['odis'].labels(nodeid=obj.name, name=state.name).set(state.counters.out_discards)
         self.structureStats['ioct'].labels(nodeid=obj.name, name=state.name).set(state.counters.in_octets)
         self.structureStats['ooct'].labels(nodeid=obj.name, name=state.name).set(state.counters.out_octets)
-
 
     def addToTopoList(self, obj):
         self.structureTop['nlinks'].set(len(obj.network[0].link))

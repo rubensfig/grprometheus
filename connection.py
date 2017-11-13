@@ -23,29 +23,35 @@ class Connection(threading.Thread):
             return self.stubTop.GetTopology(services_definition_pb2.Empty())
         except BaseException:
             print("Unexpected error:", traceback.format_exc())
-            pass
+            return
         except AttributeError:
             print("Unexpected error:", traceback.format_exc())
-            pass
+            return
 
     def __getStats(self):
         try:
             return self.stubStats.GetStatistics(services_definition_pb2.Empty())
         except BaseException:
             print("Unexpected error:", traceback.format_exc())
-            pass
+            return
         except AttributeError:
             print("Unexpected error:", traceback.format_exc())
-            pass
+            return
     
     def run(self):
         while True:
-            for obj in self.__getStats().interface:
-                if obj.state.counters.in_octets != 0:   
-                    self.prom.addToStatsList(obj)
-                else:
-                    pass 
-            time.sleep(1)
+            try:
+                stats = self.__getStats()
+                for obj in stats.interface:
+                    if obj.state.counters.in_octets != 0:   
+                        self.prom.addToStatsList(obj)
+                    else:
+                        pass 
+                time.sleep(1)
+            except : 
+               print("\nATTENTION: SERVER PROBS OFF\n") 
+               time.sleep(10)
+               continue
     
 
 if __name__ == "__main__":

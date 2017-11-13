@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm *pb2*
+rm *pb2* *pyc
 

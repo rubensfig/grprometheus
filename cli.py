@@ -8,6 +8,7 @@ class CLI(object):
     def __init__(self):
         self.conn = Connection()
         self.prom = Prom()
+
         self.conn.start()
         self.prom.execute()
 
@@ -15,6 +16,7 @@ class CLI(object):
             try:
                 user_input = self.get_input("Please enter command (or help): ")
                 self.command_choice(user_input)
+                #print(threading.enumerate())
             except KeyboardInterrupt:
                 sys.exit()
     # __init__
