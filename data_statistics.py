@@ -18,7 +18,6 @@ class DataStats:
             value[1] =  int(value[1])
         return values
          
-
     def addData(self, filtr, nodeID, portNO, values):
         #self.values.append([nodeID, portNO, pd.DataFrame(values)])
         self.values.setdefault(nodeID, [])#pd.DataFrame(values)
@@ -26,26 +25,25 @@ class DataStats:
         self.values[nodeID].append({'portno' : portNO,  'values' : pd.DataFrame(values, columns=['time', 'values']) })  
     
     def graph(self):
-        portno = '49'
-        data = ''
-        for datapnts in self.values[self.switch1]:
-            if portno not in datapnts['portno']:
-                 continue
-            else:
-                 data = datapnts['values']
-        print data.describe()
-        toplt = data
-        #mp.figure(); 
-        ax = toplt.plot( x='time', y = 'values')
+        try:
+            portno = '49'
+            data1 = ''
+            data2 = ''
+            for datapnts in self.values:
+                if portno not in datapnts[self.switch1]['portno'] or portno not in datapnts[self.switch2]['portno']:
+                     continue
+                else:
+                     data1 = datapnts[self.switch1]['values']
+                     data2 = datapnts[self.switch2]['values']
+            print(data1.describe()) 
+            print(data2.describe()) 
 
-        for datapnts in self.values[self.switch2]:
-            if portno not in datapnts['portno']:
-                 continue
-            else:
-                 data = datapnts['values']
-        print data.describe()
-        toplt = data
-        #mp.figure(); 
-        toplt.plot(ax=ax, x='time', y = 'values')
-        mp.show()
+            ax = toplt.plot( x='time', y = 'values')
+            toplt = data2
+            toplt.plot(ax=ax, x='time', y = 'values')
+            #mp.figure(); 
 
+            mp.show()
+            return
+        except:
+            print("Nothing to do")

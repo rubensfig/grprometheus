@@ -1,9 +1,11 @@
 import prometheus_client as pc
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import time
 import threading 
+import traceback 
 import json
 from data_statistics import DataStats
+import sys
 
 class Prometheus:
     structureStats = {'ibp' : pc.Gauge('in_unicast_pkts_packets', 'InBroadcastPackets', ['nodeid', 'name']),
@@ -18,10 +20,10 @@ class Prometheus:
                     }
 
     def __init__(self):
-        self.inBroadPack = 0
-        #Prometheus internal things
+        pass
 
-    def run(self):
+    def execute(self):
+        print("starting Prometheus")
         pc.start_http_server(8001)
 
     def addToStatsList(self, obj):
@@ -38,7 +40,14 @@ class Prometheus:
         self.structureTop['nlinks'].set(len(obj.network[0].link))
         self.structureTop['nnodes'].set(len(obj.network[0].node))
 
+class PrometheusThreading(threading.Thread):
 
+    def __init__(self, filtr):
+       threading.Thread.__init__(self)
+       self.name = "datastats"
+       self.filtr = 'in_octets'
+       self.stats  = DataStats()
+        
     def getValues(self, name, filtr):
         try:
             end_time = int(time.time())
@@ -47,24 +56,19 @@ class Prometheus:
             query= filtr
 
             url = 'http://172.17.0.3:9090/api/v1/query_range?query={filtr}&start={start}&end={end}&step={step}'
-            
-            response = urllib2.urlopen(url.format(filtr=query, start=start_time, end=end_time, step=step))
+
+            response = urllib.request.urlopen(url.format(filtr=query, start=start_time, end=end_time, step=step), timeout=2)
             return json.loads(response.read().decode())
 
-        except:
-            pass 
-    
-class PrometheusThreading(threading.Thread, Prometheus):
+        except IOError as type:
+            print("getValues " + "Exception " + str(type))
+            return -1 
 
-    def __init__(self, filtr):
-       threading.Thread.__init__(self)
-       self.name = "datastats"
-       self.filtr = 'in_octets'
-       self.stats  = DataStats()
-        
     def run(self):
         try:
             for data in self.getValues(self.name, self.filtr)['data']['result']:
+                if not data:
+                    return
                 values = []
                 nodeID =  data['metric']['nodeid']
                 portNO = data['metric']['name']
@@ -75,10 +79,10 @@ class PrometheusThreading(threading.Thread, Prometheus):
                 self.stats.addData(self.filtr, nodeID, portNO, values)
 
             self.stats.graph()
-
+            return
         except TypeError as type:
-            print("Exception " + str(type))
-            pass
-            
-    def exit(self):
-        threading.currentThread().join(30)
+            print("run " + "Exception " + 'TypeError')
+            return
+        except:
+            print("Unkown Exception")
+            return 
