@@ -3,14 +3,14 @@ import numpy as np
 import pandas as pd
 import time
 
-
 class DataStats:
 
     def __init__(self):
         self.filtr = ''
         self.values = {}
-        self.switch1 = 'S2902002590b21ace'
-        self.switch2 = 'S2902c454449f4c55'
+        self.switch1 = 'S290200182330dff6'
+        self.switch2 = 'S290200182330dea2'
+        self.link_agg = []
 
     def __valuesToInt(self, values):
         first_value = values[0][0]
@@ -26,6 +26,17 @@ class DataStats:
         self.values[nodeID].append(
             {'portno': portNO, 'values': pd.DataFrame(values, columns=['time', 'values'])})
 
+    def linkAgg(self, link_info):
+        temp = {}
+
+        node_src = link_info['node_src']
+        port_src = link_info['port_src']
+        node_dst = link_info['node_src']
+        port_dst = link_info['port_src']
+
+        self.values[link_info['node_src']]
+        temp.setdefault(link_info)
+
     def graph(self, portno):
         data1 = ''
         data2 = ''
@@ -37,9 +48,9 @@ class DataStats:
                 else:
                     data1 = datapnts['values']
 
+            print(data1.describe())
             toplt = data1
 
-            print(toplt.describe())
 
         except KeyError:
             print("No datapoints found")

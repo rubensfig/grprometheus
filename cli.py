@@ -1,4 +1,5 @@
 from connection import Connection
+from sflowconn import sflowConnection
 from prometheus_handler import PrometheusThreading as PromT
 from prometheus_handler import Prometheus as Prom
 import sys
@@ -10,9 +11,12 @@ class CLI(object):
     def __init__(self):
         self.prom = Prom()
         self.conn = Connection(self.prom)
+        self.sfconn = sflowConnection(self.prom)
 
         self.conn.start()
         self.prom.execute()
+        self.sfconn.start()
+
         user_input = ''
         while user_input != 'e':
             try:
@@ -48,13 +52,15 @@ class CLI(object):
 
         promT = PromT(
             self.get_input('Statistics to monitor : '),
-            self.get_input('Port No : '))
+            self.get_input('Port No : '),
+            self.conn.GetTopology()
+            )
         if promT.start() == -1:
             print("DUNNO")
         promT.join()
 
     def listStats(self):
-        promT = PromT(None, None)
+        promT = PromT(None, None, self.conn.GetTopology())
         promT.listStats('in_octets')
 
     def get_input(self, message):
@@ -63,5 +69,6 @@ class CLI(object):
 
     def exit(self):
         self.conn.exit()
+        self.sfconn.exit()
     # get_input
 # CLI

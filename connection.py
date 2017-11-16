@@ -9,7 +9,6 @@ import threading
 # Define data structure to utilize the statistics, and create a class to
 # parse to prometheus
 
-
 class Connection(threading.Thread):
 
     def __init__(self, prom):
@@ -19,7 +18,7 @@ class Connection(threading.Thread):
         self.prom = prom
         self.running = True
 
-        self.address = 'bbctrl01.labor:5000'
+        self.address = '192.128.121.126:5000'
         self.stubStats = sgrpc.NetworkStatisticsStub(
             grpc.insecure_channel(self.address))
         self.stubTop = sgrpc.NetworkDescriptorStub(
@@ -49,10 +48,14 @@ class Connection(threading.Thread):
     def exit(self):
         self.running = False
 
+    def GetTopology(self):
+        return self.__getState()
+
     def run(self):
         while self.running:
             try:
                 stats = self.__getStats()
+            
                 for obj in stats.interface:
                     if obj.state.counters.in_octets != 0:
                         self.prom.addToStatsList(obj)

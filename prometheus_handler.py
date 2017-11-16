@@ -9,7 +9,6 @@ import json
 from data_statistics import DataStats
 import sys
 
-
 class Prometheus:
     structureStats = {'ibp': pc.Gauge('in_unicast_pkts_packets', 'InBroadcastPackets', ['nodeid', 'name']),
                       'obp': pc.Gauge('out_broadcast_packets', 'OutBroadcastPackets', ['nodeid', 'name']),
@@ -18,9 +17,13 @@ class Prometheus:
                       'idis': pc.Gauge('in_discards', 'InDiscards', ['nodeid', 'name']),
                       'odis': pc.Gauge('out_discards', 'OutDiscards', ['nodeid', 'name'])
                       }
+
     structureTop = {'nlinks': pc.Gauge('number_of_links', 'NumberLinks'),
                     'nnodes': pc.Gauge('number_of_nodes', 'NumberNodes')
                     }
+
+    sflowStats = { 'ioct' : pc.Gauge('sflow_in_unicast_pkts', 'Sflow_InUnicast', ['node']),
+                 }
 
     def __init__(self):
         pass
@@ -54,15 +57,23 @@ class Prometheus:
         self.structureTop['nlinks'].set(len(obj.network[0].link))
         self.structureTop['nnodes'].set(len(obj.network[0].node))
 
+    def addSflowStats(self, stats):
+        try:
+            self.sflowStats['ioct'].labels(stats['ifname']).set(int(stats['stats_array'][0][1]))
+        except TypeError:
+            pass
+        except IndexError:
+            pass
 
 class PrometheusThreading(threading.Thread):
 
-    def __init__(self, filtr, portno):
+    def __init__(self, filtr, portno, links):
         threading.Thread.__init__(self)
         self.name = "datastats"
         self.filtr = filtr
         self.portno = portno
         self.stats = DataStats()
+        self.links = links
 
     def getValues(self, filtr):
         try:
@@ -71,7 +82,7 @@ class PrometheusThreading(threading.Thread):
             step = 30
             query = filtr
 
-            url = 'http://172.17.0.3:9090/api/v1/query_range?query={filtr}&start={start}&end={end}&step={step}'
+            url = 'http://172.17.0.2:9090/api/v1/query_range?query={filtr}&start={start}&end={end}&step={step}'
 
             response = urllib.request.urlopen(
                 url.format(
