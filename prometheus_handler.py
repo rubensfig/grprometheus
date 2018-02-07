@@ -22,13 +22,27 @@ class Prometheus:
                     'nnodes': pc.Gauge('number_of_nodes', 'NumberNodes')
                     }
 
-    sflowStats = { 'ioct' : pc.Gauge('sflow_in_unicast_pkts', 'Sflow_InUnicast', ['node']),
-                 }
+    flood_flow_count = pc.Gauge('flow_count', 'FlowCount', ['switch'])
+
+    ovsStats = { 'ioct' : pc.Gauge('ovs_in_unicast_pkts', 'OVS_InUnicast', ['nodeid', 'name']),
+                 'rpkt' : pc.Gauge('ovs_received_packets', 'OVS_InPackets', ['nodeid', 'name']),
+                 'tpkt' : pc.Gauge('ovs_transmitted_packets', 'OVS_OutPackets', ['nodeid', 'name']),
+                 'rbytes' : pc.Gauge('ovs_received_bytes', 'OVS_InBytes', ['nodeid', 'name']),
+                 'tbytes' : pc.Gauge('ovs_transmitted_bytes', 'OVS_OutBytes', ['nodeid', 'name']),
+                 'rerr' : pc.Gauge('ovs_received_errors', 'OVS_InErrors', ['nodeid', 'name']),
+                 'terr' : pc.Gauge('ovs_transmitted_errors', 'OVS_OutErrors', ['nodeid', 'name']),
+                 'ipsrc' : pc.Gauge('ovs_ip_src_flows', 'OVS_IPSrcFlows', ['name']),
+                 'ipdst' : pc.Gauge('ovs_ip_dst_flows', 'OVS_IPDstFlows', ['name']),
+                 'bdwth' : pc.Gauge('bandwidth', 'OVS_Bandwidth', ['name']),
+                }
 
     def __init__(self):
         pass
 
-    def execute(self):
+    def addFlowCount(self, mac_add, flow_count):
+        self.flood_flow_count.labels(mac_add).set(flow_count)
+
+    def execute(self): 
         print("starting Prometheus : PORT 8001")
         pc.start_http_server(8001)
 
@@ -53,17 +67,67 @@ class Prometheus:
             nodeid=obj.name, name=state.name).set(
             state.counters.out_octets)
 
+    def addOvsIpFlows(self, flows):
+        src = flows[0]
+        dst = flows[1]
+
+        for item, values in src.items():
+            self.ovsStats['ipsrc'].labels(name=item).set(values)
+
+        for item, values in dst.items():
+            self.ovsStats['ipdst'].labels(name=item).set(values)
+
+    def addBandwidth(self, bps, portno):
+        self.ovsStats['bdwth'].labels(
+            nodeid=i, name=portno).set(
+            bps)
+
+    def addToOVSList(self, stats):
+        dont_pass = ['local']
+        switches = list(stats.keys())
+        for i in stats:
+            total = stats.get(i)
+            try:
+                print("Normal Exec")
+                port_stats =  list(stats.get(i)['port_reply'][0]['port'])
+            except:
+                print("No Response")
+                continue
+
+            for stat in port_stats:
+                if stat['port_number'] in dont_pass:
+                    continue
+                # try:
+                self.ovsStats['rpkt'].labels(
+                    nodeid=i, name=stat['port_number']).set(
+                    stat.get('receive_packets'))
+                self.ovsStats['tpkt'].labels(
+                    nodeid=i, name=stat['port_number']).set(
+                    stat.get('transmit_packets'))
+
+                self.ovsStats['rbytes'].labels(
+                    nodeid=i, name=stat['port_number']).set(
+                    stat.get('receive_bytes'))
+                self.ovsStats['tbytes'].labels(
+                    nodeid=i, name=stat['port_number']).set(
+                    stat.get('transmit_bytes'))
+
+                self.ovsStats['terr'].labels(
+                    nodeid=i, name=stat['port_number']).set(
+                    stat.get('transmit_errors'))
+                self.ovsStats['rerr'].labels(
+                    nodeid=i, name=stat['port_number']).set(
+                    stat.get('receive_errors'))
+            #     except KeyError:
+                    # print("Error", stat.keys())
+               #      continue
+        # self.ovsStats['ioct'].labels(
+            # ).set(
+            # state.counters.in_broadcast_pkts)
+
     def addToTopoList(self, obj):
         self.structureTop['nlinks'].set(len(obj.network[0].link))
         self.structureTop['nnodes'].set(len(obj.network[0].node))
-
-    def addSflowStats(self, stats):
-        try:
-            self.sflowStats['ioct'].labels(stats['ifname']).set(int(stats['stats_array'][0][1]))
-        except TypeError:
-            pass
-        except IndexError:
-            pass
 
 class PrometheusThreading(threading.Thread):
 

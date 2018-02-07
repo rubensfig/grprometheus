@@ -3,3 +3,5 @@ grpcio-tools
 prometheus-client
 matplotlib
 pandas
+scipy
+sklearn
